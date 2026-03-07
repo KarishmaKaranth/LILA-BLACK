@@ -490,7 +490,7 @@ def mmss(ms: int) -> str:
 
 
 def run() -> None:
-    st.set_page_config(page_title="LILA BLACK Telemetry Studio", layout="wide")
+    st.set_page_config(page_title="LILA BLACK Telemetry Studio", layout="wide", initial_sidebar_state="expanded")
     st.markdown(
         """
         <div style="display:flex;align-items:center;gap:12px;margin:0 0 6px 0;">
@@ -513,7 +513,8 @@ def run() -> None:
         """
         <style>
           html, body, [data-testid="stAppViewContainer"] {height:100%;}
-          header[data-testid="stHeader"] {display:none !important;}
+          header[data-testid="stHeader"] {display:block !important; height: 0 !important; background: transparent !important;}
+          [data-testid="collapsedControl"] {display:flex !important; z-index: 10000 !important;}
           [data-testid="stToolbar"] {display:none !important;}
           [data-testid="stDecoration"] {display:none !important;}
           [data-testid="stStatusWidget"] {display:none !important;}
