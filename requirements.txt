@@ -1,6 +1,6 @@
-streamlit==1.49.1
-pandas==2.3.1
-pyarrow==21.0.0
-pillow==11.3.0
-numpy==2.3.2
-pydeck==0.9.1
+streamlit>=1.49,<2
+pandas>=2.2
+pyarrow>=22
+pillow>=11
+numpy>=2.2
+pydeck>=0.9
