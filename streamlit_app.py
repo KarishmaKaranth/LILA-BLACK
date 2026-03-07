@@ -329,35 +329,89 @@ def render_map_with_legend(frame: Image.Image, map_info: str) -> None:
 
     html = f"""
     <style>
-      .lg-panel {{
-        border:1px solid rgba(255,255,255,0.12);
+      .hud-shell {{
+        position: relative;
+        width: 100%;
+        height: 74vh;
+        min-height: 560px;
+        max-height: 860px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 235, 255, 0.30);
+        border-radius: 14px;
+        background: rgba(2, 8, 14, 0.62);
+        box-shadow: inset 0 0 22px rgba(0, 235, 255, 0.14), 0 0 24px rgba(0, 235, 255, 0.12);
+      }}
+      .map-viewport {{
+        position:absolute;
+        inset:0;
+        overflow:hidden;
+        cursor: grab;
+      }}
+      .map-viewport.dragging {{ cursor: grabbing; }}
+      #map-img {{
+        position:absolute;
+        left:50%;
+        top:50%;
+        width:min(92vh, 92vw);
+        height:auto;
+        aspect-ratio:1/1;
+        user-select:none;
+        -webkit-user-drag:none;
+        transform: translate(-50%, -50%) translate(0px, 0px) scale(1);
+        transform-origin: center center;
+        will-change: transform;
+      }}
+      .hud-panel {{
+        position:absolute;
+        background: rgba(6,14,24,0.56);
+        border:1px solid rgba(0,235,255,0.40);
         border-radius:12px;
-        padding:7px 8px;
-        background:rgba(10,18,32,0.7);
-        height:fit-content;
-        width:220px;
+        box-shadow: 0 0 16px rgba(0,235,255,0.18), inset 0 0 10px rgba(0,235,255,0.10);
+        backdrop-filter: blur(4px);
         color:#dce9ff;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }}
-      .lg-title {{font-weight:600;margin-bottom:6px;color:#f1f6ff;}}
-      .lg-chip {{display:inline-flex;align-items:center;gap:6px;margin-right:12px;margin-bottom:6px;color:#dce9ff;font-size:12px;}}
+      .hud-info {{
+        left:12px;
+        top:12px;
+        padding:8px 10px;
+        font-size:12px;
+        max-width: 56%;
+      }}
+      .lg-panel {{
+        right:12px;
+        top:12px;
+        width:222px;
+        padding:8px;
+      }}
+      .lg-title {{font-weight:700;margin-bottom:6px;color:#9af7ff;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;}}
+      .lg-chip {{display:flex;align-items:center;gap:7px;margin-bottom:5px;color:#dce9ff;font-size:12px;}}
       .lg-dot {{width:10px;height:10px;border-radius:50%;display:inline-block;}}
       .lg-ring-hotspot {{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ff6a76;}}
       .lg-ring-choke {{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ffab39;}}
       .lg-square-dead {{width:11px;height:11px;display:inline-block;border:2px solid #798dad;box-sizing:border-box;}}
+      .hud-zoom {{
+        right:12px;
+        bottom:12px;
+        display:flex;
+        align-items:center;
+        gap:6px;
+        padding:6px 8px;
+      }}
+      .hud-btn {{
+        width:24px;height:24px;border-radius:50%;
+        border:1px solid rgba(0,235,255,0.45);
+        background:#0b1726;color:#dce9ff;cursor:pointer;font-size:15px;line-height:20px;
+      }}
+      .hud-btn:hover {{ box-shadow:0 0 10px rgba(0,235,255,0.35); }}
+      .hud-stat {{font-size:12px;color:#bff7ff;min-width:38px;text-align:center;}}
     </style>
-    <div style='display:flex;align-items:flex-start;gap:12px;width:100%;'>
-      <div style='position:relative;flex:1;min-width:0;height:68vh;min-height:480px;max-height:760px;overflow:hidden;border:1px solid rgba(255,255,255,0.12);border-radius:14px;background:#0a1220;display:flex;align-items:center;justify-content:center;'>
-        <img id='map-img' src='data:image/png;base64,{b64}'
-            style='height:min(68vh,760px);width:auto;aspect-ratio:1/1;transform:scale(1);transform-origin:center center;display:block;transition:transform 160ms ease-out;' />
-        <div style='position:absolute;right:12px;bottom:12px;display:flex;align-items:center;gap:6px;background:rgba(3,10,20,0.75);border:1px solid rgba(255,255,255,0.2);border-radius:999px;padding:5px 8px;'>
-          <button id='zoom-out' style='width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.28);background:#0f1c30;color:#dce9ff;cursor:pointer;font-size:16px;line-height:20px;'>-</button>
-          <span id='zoom-level' style='font-size:12px;color:#dce9ff;min-width:34px;text-align:center;'>100%</span>
-          <button id='zoom-in' style='width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.28);background:#0f1c30;color:#dce9ff;cursor:pointer;font-size:16px;line-height:20px;'>+</button>
-        </div>
-        <div style='position:absolute;left:10px;bottom:0px;color:#c9d8f2;background:rgba(4,12,22,0.58);padding:4px 8px;border-top-right-radius:8px;font-size:12px;'>{map_info}</div>
+    <div class='hud-shell'>
+      <div id='map-viewport' class='map-viewport'>
+        <img id='map-img' src='data:image/png;base64,{b64}' />
       </div>
-      <div class='lg-panel'>
+      <div class='hud-panel hud-info'>{map_info}</div>
+      <div class='hud-panel lg-panel'>
         <div class='lg-title'>Legend</div>
         <div class='lg-chip'><span class='lg-dot' style='background:#ff5466'></span>Kill</div>
         <div class='lg-chip'><span class='lg-dot' style='background:#7d8cff'></span>Death</div>
@@ -370,25 +424,79 @@ def render_map_with_legend(frame: Image.Image, map_info: str) -> None:
         <div class='lg-chip'><span class='lg-ring-choke'></span>Choke Points</div>
         <div class='lg-chip'><span class='lg-square-dead'></span>Dead Zones</div>
       </div>
+      <div class='hud-panel hud-zoom'>
+        <button id='zoom-out' class='hud-btn'>-</button>
+        <span id='zoom-level' class='hud-stat'>100%</span>
+        <button id='zoom-in' class='hud-btn'>+</button>
+        <button id='zoom-reset' class='hud-btn' style='width:auto;padding:0 8px;border-radius:999px;font-size:11px;'>RST</button>
+      </div>
     </div>
     <script>
       (() => {{
         let zoom = 1.0;
         const minZoom = 1.0;
-        const maxZoom = 2.4;
+        const maxZoom = 4.0;
         const step = 0.1;
+        let panX = 0;
+        let panY = 0;
+        let dragging = false;
+        let startX = 0;
+        let startY = 0;
+        let baseX = 0;
+        let baseY = 0;
+
         const map = document.getElementById('map-img');
+        const viewport = document.getElementById('map-viewport');
         const level = document.getElementById('zoom-level');
         const apply = () => {{
-          map.style.transform = `scale(${{zoom.toFixed(1)}})`;
+          map.style.transform = `translate(-50%, -50%) translate(${{panX}}px, ${{panY}}px) scale(${{zoom.toFixed(2)}})`;
           level.textContent = `${{Math.round(zoom * 100)}}%`;
         }};
-        document.getElementById('zoom-in').onclick = () => {{ zoom = Math.min(maxZoom, zoom + step); apply(); }};
-        document.getElementById('zoom-out').onclick = () => {{ zoom = Math.max(minZoom, zoom - step); apply(); }};
+
+        const clampPan = () => {{
+          const rect = viewport.getBoundingClientRect();
+          const base = Math.min(rect.width, rect.height) * 0.46;
+          const maxPan = Math.max(0, base * (zoom - 1));
+          panX = Math.max(-maxPan, Math.min(maxPan, panX));
+          panY = Math.max(-maxPan, Math.min(maxPan, panY));
+        }};
+
+        viewport.addEventListener('wheel', (e) => {{
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? -step : step;
+          zoom = Math.max(minZoom, Math.min(maxZoom, zoom + delta));
+          clampPan();
+          apply();
+        }}, {{ passive:false }});
+
+        viewport.addEventListener('mousedown', (e) => {{
+          dragging = true;
+          viewport.classList.add('dragging');
+          startX = e.clientX;
+          startY = e.clientY;
+          baseX = panX;
+          baseY = panY;
+        }});
+        window.addEventListener('mousemove', (e) => {{
+          if (!dragging) return;
+          panX = baseX + (e.clientX - startX);
+          panY = baseY + (e.clientY - startY);
+          clampPan();
+          apply();
+        }});
+        window.addEventListener('mouseup', () => {{
+          dragging = false;
+          viewport.classList.remove('dragging');
+        }});
+
+        document.getElementById('zoom-in').onclick = () => {{ zoom = Math.min(maxZoom, zoom + step); clampPan(); apply(); }};
+        document.getElementById('zoom-out').onclick = () => {{ zoom = Math.max(minZoom, zoom - step); clampPan(); apply(); }};
+        document.getElementById('zoom-reset').onclick = () => {{ zoom = 1.0; panX = 0; panY = 0; apply(); }};
+        apply();
       }})();
     </script>
     """
-    components.html(html, height=620, scrolling=False)
+    components.html(html, height=760, scrolling=False)
 
 
 def frame_to_b64(frame: Image.Image) -> str:
@@ -609,29 +717,62 @@ def run() -> None:
     st.markdown(
         """
         <style>
-          html, body, [data-testid="stAppViewContainer"] {height:100%;}
+          html, body, [data-testid="stAppViewContainer"] {height:100%; background:#040a12;}
           header[data-testid="stHeader"] {display:none !important;}
           [data-testid="stToolbar"] {display:none !important;}
           [data-testid="stDecoration"] {display:none !important;}
           [data-testid="stStatusWidget"] {display:none !important;}
           #MainMenu {visibility: hidden;}
           footer {visibility: hidden;}
+          .stApp {background:#040a12 !important;}
           [data-testid="stAppViewContainer"] .main .block-container {
             padding-top: 0 !important;
             padding-bottom: 0 !important;
             margin-top: 0 !important;
           }
+          [data-testid="stSidebar"] {
+            position: fixed !important;
+            left: 10px;
+            top: 68px;
+            width: 315px !important;
+            height: calc(100vh - 80px) !important;
+            background: rgba(5,16,28,0.55) !important;
+            border: 1px solid rgba(0,235,255,0.35);
+            border-radius: 14px;
+            box-shadow: 0 0 20px rgba(0,235,255,0.14), inset 0 0 10px rgba(0,235,255,0.10);
+            backdrop-filter: blur(5px);
+          }
+          [data-testid="stSidebar"] * {
+            color: #bff7ff !important;
+            text-shadow: 0 0 8px rgba(0,235,255,0.24);
+          }
           h3 {
             margin-top: 0.45rem !important;
             margin-bottom: 0.25rem !important;
+            color: #a5fbff !important;
+            text-shadow: 0 0 10px rgba(0,235,255,0.30);
           }
           [data-testid="stMetric"] {
             padding-top: 2px !important;
             padding-bottom: 2px !important;
+            background: rgba(6,14,24,0.50);
+            border: 1px solid rgba(0,235,255,0.32);
+            border-radius: 10px;
+            box-shadow: inset 0 0 8px rgba(0,235,255,0.10);
           }
           [data-testid="stMetricValue"] {
             font-size: 1.35rem !important;
             line-height: 1.05 !important;
+            color: #8ff6ff !important;
+            text-shadow: 0 0 10px rgba(0,235,255,0.35);
+          }
+          .stButton > button {
+            background: rgba(6,18,30,0.66) !important;
+            border: 1px solid rgba(0,235,255,0.42) !important;
+            color: #bff7ff !important;
+            box-shadow: 0 0 10px rgba(0,235,255,0.16), inset 0 0 8px rgba(0,235,255,0.10);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
           }
           [data-testid="stDataFrame"] {
             margin-top: 2px !important;
@@ -706,7 +847,6 @@ def run() -> None:
         events_enabled=events_enabled,
         path_enabled=path_enabled,
     )
-    apply_hud_background(frame)
 
     # refresh fixed metrics with visible-window stats
     m1, m2, m3, m4, m5 = st.columns(5)
@@ -717,26 +857,7 @@ def run() -> None:
     m5.metric("Hotspots", analytics["hotspots"])
 
     map_info = f"Map: {match['map_id']} | Match: {match['match_id']} | Time: {mmss(st.session_state.current_t)} / {mmss(duration_ms)}"
-    st.markdown(
-        f"""
-        <div class="hud-overlay">
-          <div class="hud-title">Map Feed</div>
-          <div style="font-size:12px;line-height:1.3;margin-bottom:8px;">{map_info}</div>
-          <div class="hud-title">Legend</div>
-          <div class="hud-item"><span class="hud-dot" style="background:#ff5466"></span>Kill</div>
-          <div class="hud-item"><span class="hud-dot" style="background:#7d8cff"></span>Death</div>
-          <div class="hud-item"><span class="hud-dot" style="background:#00dbff"></span>Storm</div>
-          <div class="hud-item"><span class="hud-dot" style="background:#ffd558"></span>Loot</div>
-          <div class="hud-item"><span class="hud-dot" style="background:#42f7bf"></span>Human Path</div>
-          <div class="hud-item"><span class="hud-dot" style="background:#a7b1c0"></span>Bot Path</div>
-          <hr class="hud-divider" />
-          <div class="hud-item"><span class="hud-ring-hotspot"></span>Combat Hotspots</div>
-          <div class="hud-item"><span class="hud-ring-choke"></span>Choke Points</div>
-          <div class="hud-item"><span class="hud-square-dead"></span>Dead Zones</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    render_map_with_legend(frame, map_info=map_info)
 
     if hotspots:
         st.markdown("### Combat Hotspots")
