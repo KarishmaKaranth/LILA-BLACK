@@ -17,7 +17,7 @@ from backend.config import MAP_CONFIG
 from backend.loader import TelemetryStore
 
 ROOT = Path(__file__).resolve().parent
-DATA_ROOT = Path(os.getenv("LILA_DATA_ROOT", str(ROOT))).resolve()
+DATA_ROOT = Path(os.getenv("LILA_DATA_ROOT", str(ROOT.parent))).resolve()
 STORE = TelemetryStore(data_root=DATA_ROOT)
 CANVAS = 1024
 DOWNSAMPLE = 2
@@ -329,89 +329,35 @@ def render_map_with_legend(frame: Image.Image, map_info: str) -> None:
 
     html = f"""
     <style>
-      .hud-shell {{
-        position: relative;
-        width: 100%;
-        height: 74vh;
-        min-height: 560px;
-        max-height: 860px;
-        overflow: hidden;
-        border: 1px solid rgba(0, 235, 255, 0.30);
-        border-radius: 14px;
-        background: rgba(2, 8, 14, 0.62);
-        box-shadow: inset 0 0 22px rgba(0, 235, 255, 0.14), 0 0 24px rgba(0, 235, 255, 0.12);
-      }}
-      .map-viewport {{
-        position:absolute;
-        inset:0;
-        overflow:hidden;
-        cursor: grab;
-      }}
-      .map-viewport.dragging {{ cursor: grabbing; }}
-      #map-img {{
-        position:absolute;
-        left:50%;
-        top:50%;
-        width:min(92vh, 92vw);
-        height:auto;
-        aspect-ratio:1/1;
-        user-select:none;
-        -webkit-user-drag:none;
-        transform: translate(-50%, -50%) translate(0px, 0px) scale(1);
-        transform-origin: center center;
-        will-change: transform;
-      }}
-      .hud-panel {{
-        position:absolute;
-        background: rgba(6,14,24,0.56);
-        border:1px solid rgba(0,235,255,0.40);
+      .lg-panel {{
+        border:1px solid rgba(255,255,255,0.12);
         border-radius:12px;
-        box-shadow: 0 0 16px rgba(0,235,255,0.18), inset 0 0 10px rgba(0,235,255,0.10);
-        backdrop-filter: blur(4px);
+        padding:7px 8px;
+        background:rgba(10,18,32,0.7);
+        height:fit-content;
+        width:220px;
         color:#dce9ff;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }}
-      .hud-info {{
-        left:12px;
-        top:12px;
-        padding:8px 10px;
-        font-size:12px;
-        max-width: 56%;
-      }}
-      .lg-panel {{
-        right:12px;
-        top:12px;
-        width:222px;
-        padding:8px;
-      }}
-      .lg-title {{font-weight:700;margin-bottom:6px;color:#9af7ff;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;}}
-      .lg-chip {{display:flex;align-items:center;gap:7px;margin-bottom:5px;color:#dce9ff;font-size:12px;}}
+      .lg-title {{font-weight:600;margin-bottom:6px;color:#f1f6ff;}}
+      .lg-chip {{display:inline-flex;align-items:center;gap:6px;margin-right:12px;margin-bottom:6px;color:#dce9ff;font-size:12px;}}
       .lg-dot {{width:10px;height:10px;border-radius:50%;display:inline-block;}}
       .lg-ring-hotspot {{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ff6a76;}}
       .lg-ring-choke {{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ffab39;}}
       .lg-square-dead {{width:11px;height:11px;display:inline-block;border:2px solid #798dad;box-sizing:border-box;}}
-      .hud-zoom {{
-        right:12px;
-        bottom:12px;
-        display:flex;
-        align-items:center;
-        gap:6px;
-        padding:6px 8px;
-      }}
-      .hud-btn {{
-        width:24px;height:24px;border-radius:50%;
-        border:1px solid rgba(0,235,255,0.45);
-        background:#0b1726;color:#dce9ff;cursor:pointer;font-size:15px;line-height:20px;
-      }}
-      .hud-btn:hover {{ box-shadow:0 0 10px rgba(0,235,255,0.35); }}
-      .hud-stat {{font-size:12px;color:#bff7ff;min-width:38px;text-align:center;}}
     </style>
-    <div class='hud-shell'>
-      <div id='map-viewport' class='map-viewport'>
-        <img id='map-img' src='data:image/png;base64,{b64}' />
+    <div style='display:flex;align-items:flex-start;gap:12px;width:100%;'>
+      <div style='position:relative;flex:1;min-width:0;height:68vh;min-height:480px;max-height:760px;overflow:hidden;border:1px solid rgba(255,255,255,0.12);border-radius:14px;background:#0a1220;display:flex;align-items:center;justify-content:center;'>
+        <img id='map-img' src='data:image/png;base64,{b64}'
+            style='height:min(68vh,760px);width:auto;aspect-ratio:1/1;transform:scale(1);transform-origin:center center;display:block;transition:transform 160ms ease-out;' />
+        <div style='position:absolute;right:12px;bottom:12px;display:flex;align-items:center;gap:6px;background:rgba(3,10,20,0.75);border:1px solid rgba(255,255,255,0.2);border-radius:999px;padding:5px 8px;'>
+          <button id='zoom-out' style='width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.28);background:#0f1c30;color:#dce9ff;cursor:pointer;font-size:16px;line-height:20px;'>-</button>
+          <span id='zoom-level' style='font-size:12px;color:#dce9ff;min-width:34px;text-align:center;'>100%</span>
+          <button id='zoom-in' style='width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.28);background:#0f1c30;color:#dce9ff;cursor:pointer;font-size:16px;line-height:20px;'>+</button>
+        </div>
+        <div style='position:absolute;left:10px;bottom:0px;color:#c9d8f2;background:rgba(4,12,22,0.58);padding:4px 8px;border-top-right-radius:8px;font-size:12px;'>{map_info}</div>
       </div>
-      <div class='hud-panel hud-info'>{map_info}</div>
-      <div class='hud-panel lg-panel'>
+      <div class='lg-panel'>
         <div class='lg-title'>Legend</div>
         <div class='lg-chip'><span class='lg-dot' style='background:#ff5466'></span>Kill</div>
         <div class='lg-chip'><span class='lg-dot' style='background:#7d8cff'></span>Death</div>
@@ -424,176 +370,25 @@ def render_map_with_legend(frame: Image.Image, map_info: str) -> None:
         <div class='lg-chip'><span class='lg-ring-choke'></span>Choke Points</div>
         <div class='lg-chip'><span class='lg-square-dead'></span>Dead Zones</div>
       </div>
-      <div class='hud-panel hud-zoom'>
-        <button id='zoom-out' class='hud-btn'>-</button>
-        <span id='zoom-level' class='hud-stat'>100%</span>
-        <button id='zoom-in' class='hud-btn'>+</button>
-        <button id='zoom-reset' class='hud-btn' style='width:auto;padding:0 8px;border-radius:999px;font-size:11px;'>RST</button>
-      </div>
     </div>
     <script>
       (() => {{
         let zoom = 1.0;
         const minZoom = 1.0;
-        const maxZoom = 4.0;
+        const maxZoom = 2.4;
         const step = 0.1;
-        let panX = 0;
-        let panY = 0;
-        let dragging = false;
-        let startX = 0;
-        let startY = 0;
-        let baseX = 0;
-        let baseY = 0;
-
         const map = document.getElementById('map-img');
-        const viewport = document.getElementById('map-viewport');
         const level = document.getElementById('zoom-level');
         const apply = () => {{
-          map.style.transform = `translate(-50%, -50%) translate(${{panX}}px, ${{panY}}px) scale(${{zoom.toFixed(2)}})`;
+          map.style.transform = `scale(${{zoom.toFixed(1)}})`;
           level.textContent = `${{Math.round(zoom * 100)}}%`;
         }};
-
-        const clampPan = () => {{
-          const rect = viewport.getBoundingClientRect();
-          const base = Math.min(rect.width, rect.height) * 0.46;
-          const maxPan = Math.max(0, base * (zoom - 1));
-          panX = Math.max(-maxPan, Math.min(maxPan, panX));
-          panY = Math.max(-maxPan, Math.min(maxPan, panY));
-        }};
-
-        viewport.addEventListener('wheel', (e) => {{
-          e.preventDefault();
-          const delta = e.deltaY > 0 ? -step : step;
-          zoom = Math.max(minZoom, Math.min(maxZoom, zoom + delta));
-          clampPan();
-          apply();
-        }}, {{ passive:false }});
-
-        viewport.addEventListener('mousedown', (e) => {{
-          dragging = true;
-          viewport.classList.add('dragging');
-          startX = e.clientX;
-          startY = e.clientY;
-          baseX = panX;
-          baseY = panY;
-        }});
-        window.addEventListener('mousemove', (e) => {{
-          if (!dragging) return;
-          panX = baseX + (e.clientX - startX);
-          panY = baseY + (e.clientY - startY);
-          clampPan();
-          apply();
-        }});
-        window.addEventListener('mouseup', () => {{
-          dragging = false;
-          viewport.classList.remove('dragging');
-        }});
-
-        document.getElementById('zoom-in').onclick = () => {{ zoom = Math.min(maxZoom, zoom + step); clampPan(); apply(); }};
-        document.getElementById('zoom-out').onclick = () => {{ zoom = Math.max(minZoom, zoom - step); clampPan(); apply(); }};
-        document.getElementById('zoom-reset').onclick = () => {{ zoom = 1.0; panX = 0; panY = 0; apply(); }};
-        apply();
+        document.getElementById('zoom-in').onclick = () => {{ zoom = Math.min(maxZoom, zoom + step); apply(); }};
+        document.getElementById('zoom-out').onclick = () => {{ zoom = Math.max(minZoom, zoom - step); apply(); }};
       }})();
     </script>
     """
-    components.html(html, height=760, scrolling=False)
-
-
-def frame_to_b64(frame: Image.Image) -> str:
-    buf = io.BytesIO()
-    frame.convert("RGB").save(buf, format="JPEG", quality=92)
-    return base64.b64encode(buf.getvalue()).decode("ascii")
-
-
-def apply_hud_background(frame: Image.Image) -> None:
-    b64 = frame_to_b64(frame)
-    st.markdown(
-        f"""
-        <style>
-          .stApp {{
-            background: linear-gradient(rgba(5,10,20,0.58), rgba(4,8,18,0.62)),
-                        url("data:image/jpeg;base64,{b64}") center center / cover no-repeat fixed !important;
-          }}
-          [data-testid="stSidebar"] {{
-            background: linear-gradient(180deg, rgba(7,13,25,0.72), rgba(6,12,22,0.78)) !important;
-            border-right: 1px solid rgba(0, 229, 255, 0.35);
-            box-shadow: 0 0 30px rgba(0, 229, 255, 0.14);
-          }}
-          [data-testid="stSidebar"] * {{
-            color: #bff7ff !important;
-            text-shadow: 0 0 8px rgba(0, 229, 255, 0.35);
-          }}
-          [data-testid="stAppViewContainer"] .main .block-container {{
-            background: transparent !important;
-          }}
-          h1, h2, h3, p, label, .stCaption, .stMarkdown {{
-            color: #cffdff !important;
-            text-shadow: 0 0 8px rgba(0, 235, 255, 0.28);
-          }}
-          div[data-testid="stMetric"] {{
-            background: rgba(5, 16, 28, 0.5);
-            border: 1px solid rgba(0, 235, 255, 0.38);
-            border-radius: 12px;
-            box-shadow: inset 0 0 12px rgba(0, 235, 255, 0.15), 0 0 14px rgba(0, 235, 255, 0.16);
-            padding: 6px 10px;
-          }}
-          div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"] {{
-            color: #8ff6ff !important;
-            text-shadow: 0 0 10px rgba(0, 235, 255, 0.42);
-          }}
-          .stButton > button, .stDownloadButton > button {{
-            background: rgba(7, 18, 30, 0.7) !important;
-            color: #bff7ff !important;
-            border: 1px solid rgba(0, 235, 255, 0.5) !important;
-            box-shadow: 0 0 10px rgba(0, 235, 255, 0.28), inset 0 0 10px rgba(0, 235, 255, 0.14);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-          }}
-          .stSelectbox [data-baseweb="select"], .stMultiSelect [data-baseweb="select"] {{
-            background: rgba(7, 18, 30, 0.66) !important;
-            border: 1px solid rgba(0, 235, 255, 0.35) !important;
-            box-shadow: inset 0 0 8px rgba(0, 235, 255, 0.14);
-          }}
-          .stDataFrame {{
-            border: 1px solid rgba(0, 235, 255, 0.3) !important;
-            border-radius: 10px !important;
-            box-shadow: 0 0 12px rgba(0, 235, 255, 0.15) !important;
-            background: rgba(6, 14, 24, 0.5) !important;
-          }}
-          .hud-overlay {{
-            position: fixed;
-            right: 18px;
-            top: 88px;
-            z-index: 9999;
-            width: 260px;
-            background: rgba(6, 14, 24, 0.62);
-            border: 1px solid rgba(0, 235, 255, 0.45);
-            border-radius: 12px;
-            padding: 10px;
-            box-shadow: 0 0 18px rgba(0, 235, 255, 0.22), inset 0 0 10px rgba(0, 235, 255, 0.12);
-            backdrop-filter: blur(4px);
-            color: #cfffff;
-          }}
-          .hud-title {{
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: .08em;
-            color: #8ff6ff;
-            margin-bottom: 7px;
-            text-transform: uppercase;
-          }}
-          .hud-item {{
-            display:flex; align-items:center; gap:7px; margin:4px 0; font-size:12px;
-          }}
-          .hud-dot {{width:10px;height:10px;border-radius:50%;display:inline-block;}}
-          .hud-ring-hotspot {{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ff6a76;}}
-          .hud-ring-choke {{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ffab39;}}
-          .hud-square-dead {{width:11px;height:11px;display:inline-block;border:2px solid #798dad;box-sizing:border-box;}}
-          .hud-divider {{border:0;border-top:1px solid rgba(143,246,255,0.35);margin:7px 0;}}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    components.html(html, height=620, scrolling=False)
 
 
 def events_near_hotspot(events: list[dict], cx: float, cy: float, radius: float, max_items: int = 30) -> list[dict]:
@@ -698,7 +493,7 @@ def run() -> None:
     st.set_page_config(page_title="LILA BLACK Telemetry Studio", layout="wide")
     st.markdown(
         """
-        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 8px 0;">
+        <div style="display:flex;align-items:center;gap:12px;margin:0 0 6px 0;">
           <img src="https://lilagames.com/wp-content/uploads/2023/05/LILA-LOGO-1.png"
                style="height:28px;width:auto;filter:brightness(0) invert(1);" />
           <div style="font-size:2rem;font-weight:700;line-height:1.1;">LILA BLACK | Level Design Telemetry Studio</div>
@@ -717,76 +512,46 @@ def run() -> None:
     st.markdown(
         """
         <style>
-          html, body, [data-testid="stAppViewContainer"] {height:100%; background:#040a12;}
+          html, body, [data-testid="stAppViewContainer"] {height:100%;}
           header[data-testid="stHeader"] {display:none !important;}
           [data-testid="stToolbar"] {display:none !important;}
           [data-testid="stDecoration"] {display:none !important;}
           [data-testid="stStatusWidget"] {display:none !important;}
           #MainMenu {visibility: hidden;}
           footer {visibility: hidden;}
-          .stApp {background:#040a12 !important;}
           [data-testid="stAppViewContainer"] .main .block-container {
             padding-top: 0 !important;
             padding-bottom: 0 !important;
             margin-top: 0 !important;
-            margin-left: 326px !important;
-            padding-left: 14px !important;
-            padding-right: 14px !important;
-            max-width: calc(100vw - 350px) !important;
           }
-          [data-testid="stSidebar"] {
-            position: fixed !important;
-            left: 10px;
-            top: 68px;
-            width: 300px !important;
-            height: calc(100vh - 80px) !important;
-            background: rgba(5,16,28,0.55) !important;
-            border: 1px solid rgba(0,235,255,0.35);
-            border-radius: 14px;
-            box-shadow: 0 0 20px rgba(0,235,255,0.14), inset 0 0 10px rgba(0,235,255,0.10);
-            backdrop-filter: blur(5px);
-          }
-          [data-testid="stSidebar"] * {
-            color: #bff7ff !important;
-            text-shadow: 0 0 8px rgba(0,235,255,0.24);
+          .legend-chip {display:inline-flex;align-items:center;gap:6px;margin-right:12px;color:#dce9ff;font-size:12px;}
+          .legend-dot {width:10px;height:10px;border-radius:50%;display:inline-block;}
+          .legend-ring-hotspot {width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ff6a76;}
+          .legend-ring-choke {width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ffab39;}
+          .legend-square-dead {width:11px;height:11px;display:inline-block;border:2px solid #798dad;box-sizing:border-box;}
+          .legend-panel {
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 7px 8px;
+            background: rgba(10,18,32,0.7);
+            height: fit-content;
+            width: 220px;
           }
           h3 {
             margin-top: 0.45rem !important;
             margin-bottom: 0.25rem !important;
-            color: #a5fbff !important;
-            text-shadow: 0 0 10px rgba(0,235,255,0.30);
-          }
-          [data-testid="stHorizontalBlock"] {
-            align-items: center !important;
           }
           [data-testid="stMetric"] {
             padding-top: 2px !important;
             padding-bottom: 2px !important;
-            background: rgba(6,14,24,0.50);
-            border: 1px solid rgba(0,235,255,0.32);
-            border-radius: 10px;
-            box-shadow: inset 0 0 8px rgba(0,235,255,0.10);
           }
           [data-testid="stMetricValue"] {
             font-size: 1.35rem !important;
             line-height: 1.05 !important;
-            color: #8ff6ff !important;
-            text-shadow: 0 0 10px rgba(0,235,255,0.35);
-          }
-          .stButton > button {
-            background: rgba(6,18,30,0.66) !important;
-            border: 1px solid rgba(0,235,255,0.42) !important;
-            color: #bff7ff !important;
-            box-shadow: 0 0 10px rgba(0,235,255,0.16), inset 0 0 8px rgba(0,235,255,0.10);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
           }
           [data-testid="stDataFrame"] {
             margin-top: 2px !important;
             margin-bottom: 4px !important;
-          }
-          [data-testid="stSliderTickBarMin"], [data-testid="stSliderTickBarMax"] {
-            opacity: 0.55;
           }
         </style>
         """,
@@ -798,8 +563,6 @@ def run() -> None:
         st.session_state.playing = False
     if "current_t" not in st.session_state:
         st.session_state.current_t = 0
-    if "show_nav_panel" not in st.session_state:
-        st.session_state.show_nav_panel = False
 
     with st.sidebar:
         st.markdown("### Filters")
@@ -841,20 +604,14 @@ def run() -> None:
 
     duration_ms = max(1, int(match["duration_ms"]))
 
-    toggle_left, toggle_mid, toggle_right = st.columns([2.4, 2.2, 2.4])
-    if toggle_mid.button("HOT LOAD NAV", width="stretch"):
-        st.session_state.show_nav_panel = not st.session_state.show_nav_panel
-
-    speed = 1
-    if st.session_state.show_nav_panel:
-        nav_pad_l, c1, c2, c3, c4, nav_pad_r = st.columns([1.2, 0.9, 1.1, 0.9, 4.9, 1.2])
-        if c1.button("Play", width="stretch"):
-            st.session_state.playing = not st.session_state.playing
-        speed = c2.select_slider("Speed", options=[0.5, 1, 2, 4], value=1, label_visibility="collapsed")
-        if c3.button("Reset", width="stretch"):
-            st.session_state.current_t = 0
-            st.session_state.playing = False
-        st.session_state.current_t = c4.slider("Timeline", 0, duration_ms, min(st.session_state.current_t, duration_ms), 20, label_visibility="collapsed")
+    c1, c2, c3, c4 = st.columns([0.8, 1.0, 0.8, 6.4])
+    if c1.button("Play", width="stretch"):
+        st.session_state.playing = not st.session_state.playing
+    speed = c2.select_slider("Speed", options=[0.5, 1, 2, 4], value=1, label_visibility="collapsed")
+    if c3.button("Reset", width="stretch"):
+        st.session_state.current_t = 0
+        st.session_state.playing = False
+    st.session_state.current_t = c4.slider("Timeline", 0, duration_ms, min(st.session_state.current_t, duration_ms), 20, label_visibility="collapsed")
 
     layers = {"heatmap": heatmap_on, "heatmap_mode": heatmap_mode}
     frame, analytics, visible_events, hotspots = render_frame(
@@ -867,7 +624,7 @@ def run() -> None:
     )
 
     # refresh fixed metrics with visible-window stats
-    m_pad_l, m1, m2, m3, m4, m5, m_pad_r = st.columns([1.0, 1, 1, 1, 1, 1, 1.0])
+    m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("Players", match["stats"]["players"])
     m2.metric("Visible Kills", analytics["kills"])
     m3.metric("Visible Deaths", analytics["deaths"])
