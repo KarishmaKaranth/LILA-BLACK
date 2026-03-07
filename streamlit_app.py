@@ -798,6 +798,8 @@ def run() -> None:
         st.session_state.playing = False
     if "current_t" not in st.session_state:
         st.session_state.current_t = 0
+    if "show_nav_panel" not in st.session_state:
+        st.session_state.show_nav_panel = False
 
     with st.sidebar:
         st.markdown("### Filters")
@@ -839,14 +841,20 @@ def run() -> None:
 
     duration_ms = max(1, int(match["duration_ms"]))
 
-    nav_pad_l, c1, c2, c3, c4, nav_pad_r = st.columns([1.2, 0.9, 1.1, 0.9, 4.9, 1.2])
-    if c1.button("Play", width="stretch"):
-        st.session_state.playing = not st.session_state.playing
-    speed = c2.select_slider("Speed", options=[0.5, 1, 2, 4], value=1, label_visibility="collapsed")
-    if c3.button("Reset", width="stretch"):
-        st.session_state.current_t = 0
-        st.session_state.playing = False
-    st.session_state.current_t = c4.slider("Timeline", 0, duration_ms, min(st.session_state.current_t, duration_ms), 20, label_visibility="collapsed")
+    toggle_left, toggle_mid, toggle_right = st.columns([2.4, 2.2, 2.4])
+    if toggle_mid.button("HOT LOAD NAV", width="stretch"):
+        st.session_state.show_nav_panel = not st.session_state.show_nav_panel
+
+    speed = 1
+    if st.session_state.show_nav_panel:
+        nav_pad_l, c1, c2, c3, c4, nav_pad_r = st.columns([1.2, 0.9, 1.1, 0.9, 4.9, 1.2])
+        if c1.button("Play", width="stretch"):
+            st.session_state.playing = not st.session_state.playing
+        speed = c2.select_slider("Speed", options=[0.5, 1, 2, 4], value=1, label_visibility="collapsed")
+        if c3.button("Reset", width="stretch"):
+            st.session_state.current_t = 0
+            st.session_state.playing = False
+        st.session_state.current_t = c4.slider("Timeline", 0, duration_ms, min(st.session_state.current_t, duration_ms), 20, label_visibility="collapsed")
 
     layers = {"heatmap": heatmap_on, "heatmap_mode": heatmap_mode}
     frame, analytics, visible_events, hotspots = render_frame(
