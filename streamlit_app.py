@@ -829,7 +829,7 @@ def run() -> None:
 
     duration_ms = max(1, int(match["duration_ms"]))
 
-    c1, c2, c3, c4 = st.columns([0.8, 1.0, 0.8, 6.4])
+    nav_pad_l, c1, c2, c3, c4, nav_pad_r = st.columns([1.2, 0.9, 1.1, 0.9, 4.9, 1.2])
     if c1.button("Play", width="stretch"):
         st.session_state.playing = not st.session_state.playing
     speed = c2.select_slider("Speed", options=[0.5, 1, 2, 4], value=1, label_visibility="collapsed")
@@ -849,7 +849,7 @@ def run() -> None:
     )
 
     # refresh fixed metrics with visible-window stats
-    m1, m2, m3, m4, m5 = st.columns(5)
+    m_pad_l, m1, m2, m3, m4, m5, m_pad_r = st.columns([1.0, 1, 1, 1, 1, 1, 1.0])
     m1.metric("Players", match["stats"]["players"])
     m2.metric("Visible Kills", analytics["kills"])
     m3.metric("Visible Deaths", analytics["deaths"])
