@@ -513,8 +513,14 @@ def run() -> None:
         """
         <style>
           html, body, [data-testid="stAppViewContainer"] {height:100%;}
-          header[data-testid="stHeader"] {display:block !important; height: 0 !important; background: transparent !important;}
+          header[data-testid="stHeader"] {display:block !important; background: transparent !important;}
           [data-testid="collapsedControl"] {display:flex !important; z-index: 10000 !important;}
+          [data-testid="stSidebar"] {
+            min-width: 320px !important;
+            max-width: 320px !important;
+            transform: none !important;
+            visibility: visible !important;
+          }
           [data-testid="stToolbar"] {display:none !important;}
           [data-testid="stDecoration"] {display:none !important;}
           [data-testid="stStatusWidget"] {display:none !important;}
