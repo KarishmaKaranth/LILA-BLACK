@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,11 +28,93 @@ class FileRef:
 class TelemetryStore:
     def __init__(self, data_root: Path = DATA_ROOT):
         self.data_root = data_root
+        self.manifest_path = self.data_root / "match_manifest.json"
         self._files: list[FileRef] = []
         self._meta_built = False
         self._match_summaries: dict[str, dict[str, Any]] = {}
         self._match_to_files: dict[str, list[FileRef]] = {}
         self._match_cache: dict[str, dict[str, Any]] = {}
+
+    def _load_manifest(self) -> bool:
+        if not self.manifest_path.exists():
+            return False
+        try:
+            raw = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        except Exception:
+            return False
+
+        summaries = raw.get("match_summaries", {})
+        match_to_files = raw.get("match_to_files", {})
+        if not summaries or not match_to_files:
+            return False
+
+        self._files = []
+        self._match_summaries = {}
+        self._match_to_files = {}
+
+        for match_id, summary in summaries.items():
+            self._match_summaries[match_id] = {
+                "match_id": summary["match_id"],
+                "date": summary["date"],
+                "map_id": summary["map_id"],
+                "users": set(summary["users"]),
+                "humans": set(summary["humans"]),
+                "bots": set(summary["bots"]),
+                "event_count": int(summary["event_count"]),
+                "start_ts": int(summary["start_ts"]),
+                "end_ts": int(summary["end_ts"]),
+            }
+
+        for match_id, items in match_to_files.items():
+            refs: list[FileRef] = []
+            for item in items:
+                ref = FileRef(
+                    path=self.data_root / item["relpath"],
+                    date=item["date"],
+                    user_id=item["user_id"],
+                    match_id=item["match_id"],
+                )
+                refs.append(ref)
+                self._files.append(ref)
+            self._match_to_files[match_id] = refs
+
+        self._meta_built = True
+        return True
+
+    def _save_manifest(self) -> None:
+        try:
+            payload = {
+                "match_summaries": {},
+                "match_to_files": {},
+            }
+            for match_id, s in self._match_summaries.items():
+                payload["match_summaries"][match_id] = {
+                    "match_id": s["match_id"],
+                    "date": s["date"],
+                    "map_id": s["map_id"],
+                    "users": sorted(s["users"]),
+                    "humans": sorted(s["humans"]),
+                    "bots": sorted(s["bots"]),
+                    "event_count": int(s["event_count"]),
+                    "start_ts": int(s["start_ts"]),
+                    "end_ts": int(s["end_ts"]),
+                }
+
+            for match_id, refs in self._match_to_files.items():
+                payload["match_to_files"][match_id] = [
+                    {
+                        "relpath": str(ref.path.relative_to(self.data_root)),
+                        "date": ref.date,
+                        "user_id": ref.user_id,
+                        "match_id": ref.match_id,
+                    }
+                    for ref in refs
+                ]
+
+            self.manifest_path.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
+        except Exception:
+            # Manifest is a performance optimization only; never fail app startup.
+            return
 
     def _discover_files(self) -> None:
         if self._files:
@@ -86,6 +169,8 @@ class TelemetryStore:
     def _build_meta(self) -> None:
         if self._meta_built:
             return
+        if self._load_manifest():
+            return
         self._discover_files()
 
         for ref in self._files:
@@ -121,6 +206,7 @@ class TelemetryStore:
             self._match_to_files.setdefault(ref.match_id, []).append(ref)
 
         self._meta_built = True
+        self._save_manifest()
 
     def get_meta(self) -> dict[str, Any]:
         self._build_meta()
