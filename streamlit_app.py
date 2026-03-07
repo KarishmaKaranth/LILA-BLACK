@@ -391,6 +391,103 @@ def render_map_with_legend(frame: Image.Image, map_info: str) -> None:
     components.html(html, height=620, scrolling=False)
 
 
+def frame_to_b64(frame: Image.Image) -> str:
+    buf = io.BytesIO()
+    frame.convert("RGB").save(buf, format="JPEG", quality=92)
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def apply_hud_background(frame: Image.Image) -> None:
+    b64 = frame_to_b64(frame)
+    st.markdown(
+        f"""
+        <style>
+          .stApp {{
+            background: linear-gradient(rgba(5,10,20,0.58), rgba(4,8,18,0.62)),
+                        url("data:image/jpeg;base64,{b64}") center center / cover no-repeat fixed !important;
+          }}
+          [data-testid="stSidebar"] {{
+            background: linear-gradient(180deg, rgba(7,13,25,0.72), rgba(6,12,22,0.78)) !important;
+            border-right: 1px solid rgba(0, 229, 255, 0.35);
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.14);
+          }}
+          [data-testid="stSidebar"] * {{
+            color: #bff7ff !important;
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.35);
+          }}
+          [data-testid="stAppViewContainer"] .main .block-container {{
+            background: transparent !important;
+          }}
+          h1, h2, h3, p, label, .stCaption, .stMarkdown {{
+            color: #cffdff !important;
+            text-shadow: 0 0 8px rgba(0, 235, 255, 0.28);
+          }}
+          div[data-testid="stMetric"] {{
+            background: rgba(5, 16, 28, 0.5);
+            border: 1px solid rgba(0, 235, 255, 0.38);
+            border-radius: 12px;
+            box-shadow: inset 0 0 12px rgba(0, 235, 255, 0.15), 0 0 14px rgba(0, 235, 255, 0.16);
+            padding: 6px 10px;
+          }}
+          div[data-testid="stMetricLabel"], div[data-testid="stMetricValue"] {{
+            color: #8ff6ff !important;
+            text-shadow: 0 0 10px rgba(0, 235, 255, 0.42);
+          }}
+          .stButton > button, .stDownloadButton > button {{
+            background: rgba(7, 18, 30, 0.7) !important;
+            color: #bff7ff !important;
+            border: 1px solid rgba(0, 235, 255, 0.5) !important;
+            box-shadow: 0 0 10px rgba(0, 235, 255, 0.28), inset 0 0 10px rgba(0, 235, 255, 0.14);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }}
+          .stSelectbox [data-baseweb="select"], .stMultiSelect [data-baseweb="select"] {{
+            background: rgba(7, 18, 30, 0.66) !important;
+            border: 1px solid rgba(0, 235, 255, 0.35) !important;
+            box-shadow: inset 0 0 8px rgba(0, 235, 255, 0.14);
+          }}
+          .stDataFrame {{
+            border: 1px solid rgba(0, 235, 255, 0.3) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 0 12px rgba(0, 235, 255, 0.15) !important;
+            background: rgba(6, 14, 24, 0.5) !important;
+          }}
+          .hud-overlay {{
+            position: fixed;
+            right: 18px;
+            top: 88px;
+            z-index: 9999;
+            width: 260px;
+            background: rgba(6, 14, 24, 0.62);
+            border: 1px solid rgba(0, 235, 255, 0.45);
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 0 18px rgba(0, 235, 255, 0.22), inset 0 0 10px rgba(0, 235, 255, 0.12);
+            backdrop-filter: blur(4px);
+            color: #cfffff;
+          }}
+          .hud-title {{
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            color: #8ff6ff;
+            margin-bottom: 7px;
+            text-transform: uppercase;
+          }}
+          .hud-item {{
+            display:flex; align-items:center; gap:7px; margin:4px 0; font-size:12px;
+          }}
+          .hud-dot {{width:10px;height:10px;border-radius:50%;display:inline-block;}}
+          .hud-ring-hotspot {{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ff6a76;}}
+          .hud-ring-choke {{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ffab39;}}
+          .hud-square-dead {{width:11px;height:11px;display:inline-block;border:2px solid #798dad;box-sizing:border-box;}}
+          .hud-divider {{border:0;border-top:1px solid rgba(143,246,255,0.35);margin:7px 0;}}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def events_near_hotspot(events: list[dict], cx: float, cy: float, radius: float, max_items: int = 30) -> list[dict]:
     rows = []
     for e in events:
@@ -524,19 +621,6 @@ def run() -> None:
             padding-bottom: 0 !important;
             margin-top: 0 !important;
           }
-          .legend-chip {display:inline-flex;align-items:center;gap:6px;margin-right:12px;color:#dce9ff;font-size:12px;}
-          .legend-dot {width:10px;height:10px;border-radius:50%;display:inline-block;}
-          .legend-ring-hotspot {width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ff6a76;}
-          .legend-ring-choke {width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid #ffab39;}
-          .legend-square-dead {width:11px;height:11px;display:inline-block;border:2px solid #798dad;box-sizing:border-box;}
-          .legend-panel {
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 12px;
-            padding: 7px 8px;
-            background: rgba(10,18,32,0.7);
-            height: fit-content;
-            width: 220px;
-          }
           h3 {
             margin-top: 0.45rem !important;
             margin-bottom: 0.25rem !important;
@@ -622,6 +706,7 @@ def run() -> None:
         events_enabled=events_enabled,
         path_enabled=path_enabled,
     )
+    apply_hud_background(frame)
 
     # refresh fixed metrics with visible-window stats
     m1, m2, m3, m4, m5 = st.columns(5)
@@ -632,7 +717,26 @@ def run() -> None:
     m5.metric("Hotspots", analytics["hotspots"])
 
     map_info = f"Map: {match['map_id']} | Match: {match['match_id']} | Time: {mmss(st.session_state.current_t)} / {mmss(duration_ms)}"
-    render_map_with_legend(frame, map_info=map_info)
+    st.markdown(
+        f"""
+        <div class="hud-overlay">
+          <div class="hud-title">Map Feed</div>
+          <div style="font-size:12px;line-height:1.3;margin-bottom:8px;">{map_info}</div>
+          <div class="hud-title">Legend</div>
+          <div class="hud-item"><span class="hud-dot" style="background:#ff5466"></span>Kill</div>
+          <div class="hud-item"><span class="hud-dot" style="background:#7d8cff"></span>Death</div>
+          <div class="hud-item"><span class="hud-dot" style="background:#00dbff"></span>Storm</div>
+          <div class="hud-item"><span class="hud-dot" style="background:#ffd558"></span>Loot</div>
+          <div class="hud-item"><span class="hud-dot" style="background:#42f7bf"></span>Human Path</div>
+          <div class="hud-item"><span class="hud-dot" style="background:#a7b1c0"></span>Bot Path</div>
+          <hr class="hud-divider" />
+          <div class="hud-item"><span class="hud-ring-hotspot"></span>Combat Hotspots</div>
+          <div class="hud-item"><span class="hud-ring-choke"></span>Choke Points</div>
+          <div class="hud-item"><span class="hud-square-dead"></span>Dead Zones</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     if hotspots:
         st.markdown("### Combat Hotspots")
