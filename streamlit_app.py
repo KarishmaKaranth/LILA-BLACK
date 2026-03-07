@@ -17,7 +17,7 @@ from backend.config import MAP_CONFIG
 from backend.loader import TelemetryStore
 
 ROOT = Path(__file__).resolve().parent
-DATA_ROOT = Path(os.getenv("LILA_DATA_ROOT", str(ROOT.parent))).resolve()
+DATA_ROOT = Path(os.getenv("LILA_DATA_ROOT", str(ROOT))).resolve()
 STORE = TelemetryStore(data_root=DATA_ROOT)
 CANVAS = 1024
 DOWNSAMPLE = 2
