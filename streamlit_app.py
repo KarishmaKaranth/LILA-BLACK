@@ -698,7 +698,7 @@ def run() -> None:
     st.set_page_config(page_title="LILA BLACK Telemetry Studio", layout="wide")
     st.markdown(
         """
-        <div style="display:flex;align-items:center;gap:12px;margin:0 0 6px 0;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 8px 0;">
           <img src="https://lilagames.com/wp-content/uploads/2023/05/LILA-LOGO-1.png"
                style="height:28px;width:auto;filter:brightness(0) invert(1);" />
           <div style="font-size:2rem;font-weight:700;line-height:1.1;">LILA BLACK | Level Design Telemetry Studio</div>
@@ -729,12 +729,16 @@ def run() -> None:
             padding-top: 0 !important;
             padding-bottom: 0 !important;
             margin-top: 0 !important;
+            margin-left: 326px !important;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+            max-width: calc(100vw - 350px) !important;
           }
           [data-testid="stSidebar"] {
             position: fixed !important;
             left: 10px;
             top: 68px;
-            width: 315px !important;
+            width: 300px !important;
             height: calc(100vh - 80px) !important;
             background: rgba(5,16,28,0.55) !important;
             border: 1px solid rgba(0,235,255,0.35);
@@ -751,6 +755,9 @@ def run() -> None:
             margin-bottom: 0.25rem !important;
             color: #a5fbff !important;
             text-shadow: 0 0 10px rgba(0,235,255,0.30);
+          }
+          [data-testid="stHorizontalBlock"] {
+            align-items: center !important;
           }
           [data-testid="stMetric"] {
             padding-top: 2px !important;
@@ -777,6 +784,9 @@ def run() -> None:
           [data-testid="stDataFrame"] {
             margin-top: 2px !important;
             margin-bottom: 4px !important;
+          }
+          [data-testid="stSliderTickBarMin"], [data-testid="stSliderTickBarMax"] {
+            opacity: 0.55;
           }
         </style>
         """,
