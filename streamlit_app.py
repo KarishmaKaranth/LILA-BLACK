@@ -560,6 +560,21 @@ def run() -> None:
             margin-top: 2px !important;
             margin-bottom: 4px !important;
           }
+          .stButton > button {
+            color: #bff9ff !important;
+            border: 1px solid rgba(0, 240, 255, 0.55) !important;
+            background: rgba(7, 18, 30, 0.62) !important;
+            text-shadow: 0 0 6px rgba(0, 240, 255, 0.65), 0 0 14px rgba(0, 240, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.35), inset 0 0 8px rgba(0, 240, 255, 0.15);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+          }
+          .stButton > button:hover {
+            color: #e6feff !important;
+            border-color: rgba(100, 255, 255, 0.9) !important;
+            box-shadow: 0 0 16px rgba(0, 255, 255, 0.55), inset 0 0 12px rgba(0, 255, 255, 0.2);
+            transform: translateY(-1px);
+          }
         </style>
         """,
         unsafe_allow_html=True,
